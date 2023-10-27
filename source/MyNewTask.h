@@ -23,7 +23,7 @@
 #define gMyNewTaskEvent2_c (1 << 1)
 #define gMyNewTaskEvent3_c (1 << 2)
 
-#define gMyTaskPriority_c 3
+#define gMyTaskPriority_c 4
 #define gMyTaskStackSize_c 400
 
 void MyTaskTimer_Start(void);
