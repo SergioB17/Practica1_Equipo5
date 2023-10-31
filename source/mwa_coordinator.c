@@ -74,6 +74,7 @@ void AppThread (uint32_t argument);
 resultType_t MLME_NWK_SapHandler (nwkMessage_t* pMsg, instanceId_t instanceId);
 resultType_t MCPS_NWK_SapHandler (mcpsToNwkMessage_t* pMsg, instanceId_t instanceId);
 extern void Mac_SetExtendedAddress(uint8_t *pAddr, instanceId_t instanceId);
+void Led_State(uint8_t counter);
 
 /************************************************************************************
 *************************************************************************************
@@ -88,7 +89,7 @@ extern void Mac_SetExtendedAddress(uint8_t *pAddr, instanceId_t instanceId);
 *************************************************************************************
 ************************************************************************************/
 /* The short address and PAN ID of the coordinator*/
-static const uint16_t mShortAddress = mDefaultValueOfShortAddress_c;
+static const uint16_t mShortAddress = 0x0000;
 static const uint16_t mPanId = 0x0505;
 
 /* The current logical channel (frequency band) */
@@ -374,8 +375,8 @@ void AppThread(uint32_t argument)
           if (ev & gAppEvtRxFromUart_c)
           {      
               /* get byte from UART */
-              App_TransmitUartData();
-          }
+
+          } App_TransmitUartData();
 
           break;
       }/* switch(gState) */
@@ -412,7 +413,7 @@ void AppThread(uint32_t argument)
           break;
       }
 
-      MyTaskTimer_Stop(); /* STOP Timer from MY NEW TASK*/
+      //MyTaskTimer_Stop(); /* STOP Timer from MY NEW TASK*/
   }/* while(1) */
 }
 
@@ -423,6 +424,31 @@ void AppThread(uint32_t argument)
 * Private functions
 *************************************************************************************
 ************************************************************************************/
+
+void Led_State(uint8_t counter)
+{
+	switch(counter)
+	{
+		case(1):
+			Led_RGB(1,0xFF,0x00,0x00);
+		break;
+		case(2):
+			Led_RGB(1,0x00,0xFF,0x00);
+		break;
+		case(3):
+			Led_RGB(1,0x00,0x00,0xFF);
+		break;
+		case(4):
+			Led_RGB(1,0x00,0xFF,0xFF);
+		break;
+		case(5):
+			Led_RGB(1,0xFF,0x00,0xFF);
+		break;
+		default:
+			Led_RGB(1,0x00,0x00,0x00);
+		break;
+	}
+}
 
 /*****************************************************************************
 * UartRxCallBack
@@ -528,12 +554,12 @@ static uint8_t App_StartScan(macScanType_t scanType, uint8_t appInstance)
 ******************************************************************************/
 static void App_HandleScanEdConfirm(nwkMessage_t *pMsg)
 {  
-  uint8_t n, minEnergy;
+  uint8_t minEnergy;
   uint8_t *pEdList;
   uint32_t chMask = mDefaultValueOfChannel_c;
-  uint8_t idx;
+  //uint8_t idx;
 #ifndef gPHY_802_15_4g_d
-  uint8_t Channel;
+  //uint8_t Channel;
 #endif
 
   Serial_Print(interfaceId,"Received the MLME-Scan Confirm message from the MAC\n\r", gAllowToBlock_d);
@@ -822,6 +848,9 @@ static uint8_t App_HandleMlmeInput(nwkMessage_t *pMsg, uint8_t appInstance)
 ******************************************************************************/
 static void App_HandleMcpsInput(mcpsToNwkMessage_t *pMsgIn, uint8_t appInstance)
 {
+	uint8_t counter = 0, lqi = 0, pl_length = 0;
+	uint64_t src_Addr = 0;
+
   switch(pMsgIn->msgType)
   {
     /* The MCPS-Data confirm is sent by the MAC to the network
@@ -835,7 +864,26 @@ static void App_HandleMcpsInput(mcpsToNwkMessage_t *pMsgIn, uint8_t appInstance)
     /* The MCPS-Data indication is sent by the MAC to the network
        or application layer when data has been received. We simply
        copy the received data to the UART. */
-    Serial_SyncWrite( interfaceId,pMsgIn->msgData.dataInd.pMsdu, pMsgIn->msgData.dataInd.msduLength );
+    //Serial_SyncWrite( interfaceId,pMsgIn->msgData.dataInd.pMsdu, pMsgIn->msgData.dataInd.msduLength );
+    counter = *(pMsgIn->msgData.dataInd.pMsdu);
+    src_Addr = pMsgIn->msgData.dataInd.srcAddr;
+    lqi = pMsgIn->msgData.dataInd.mpduLinkQuality;
+    pl_length = pMsgIn->msgData.dataInd.msduLength;
+
+    Serial_Print(interfaceId,"Counter: 0x", gAllowToBlock_d);
+    Serial_PrintHex(interfaceId, &counter, 1, gPrtHexNoFormat_c);
+
+    Serial_Print(interfaceId,"\n\rSource Address: 0x", gAllowToBlock_d);
+    Serial_PrintHex(interfaceId,(uint8_t *)&src_Addr, 8, gPrtHexNoFormat_c);
+
+    Serial_Print(interfaceId,"\n\rLQI: 0x", gAllowToBlock_d);
+    Serial_PrintHex(interfaceId, &lqi, 1, gPrtHexNoFormat_c);
+
+    Serial_Print(interfaceId,"\n\rPayload length: 0x", gAllowToBlock_d);
+    Serial_PrintHex(interfaceId, &pl_length, 1, gPrtHexNoFormat_c);
+
+    Led_State(counter);
+
     break;
     
   default:
