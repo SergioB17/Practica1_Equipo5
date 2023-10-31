@@ -37,7 +37,6 @@
 #include "board.h"
 #include "fsl_os_abstraction.h"
 
-#include "MyNewTask.h"
 #include "fsl_os_abstraction.h"
 
 /************************************************************************************
@@ -155,8 +154,6 @@ void main_task(uint32_t param)
 {
     static uint8_t initialized = FALSE;
     /* OSA Task Definition*/
-
-    MyTask_Init(); /* INIT MY NEW TASK */
     
     if( !initialized )
     {
@@ -355,7 +352,6 @@ void AppThread(uint32_t argument)
                   }
               }
           }
-          MyTaskTimer_Start(); /*Start LED flashing with your task*/
           break; 
           
       case stateListen:
@@ -430,22 +426,22 @@ void Led_State(uint8_t counter)
 	switch(counter)
 	{
 		case(1):
-			Led_RGB(1,0xFF,0x00,0x00);
+			Led_RGB(LED_RGB,0xFF,0x00,0x00);
 		break;
 		case(2):
-			Led_RGB(1,0x00,0xFF,0x00);
+			Led_RGB(LED_RGB,0x00,0xFF,0x00);
 		break;
 		case(3):
-			Led_RGB(1,0x00,0x00,0xFF);
+			Led_RGB(LED_RGB,0x00,0x00,0xFF);
 		break;
 		case(4):
-			Led_RGB(1,0x00,0xFF,0xFF);
+			Led_RGB(LED_RGB,0x00,0xFF,0xFF);
 		break;
 		case(5):
-			Led_RGB(1,0xFF,0x00,0xFF);
+			Led_RGB(LED_RGB,0xFF,0x00,0xFF);
 		break;
 		default:
-			Led_RGB(1,0x00,0x00,0x00);
+			Led_RGB(LED_RGB,0x00,0x00,0x00);
 		break;
 	}
 }
@@ -865,7 +861,7 @@ static void App_HandleMcpsInput(mcpsToNwkMessage_t *pMsgIn, uint8_t appInstance)
        or application layer when data has been received. We simply
        copy the received data to the UART. */
     //Serial_SyncWrite( interfaceId,pMsgIn->msgData.dataInd.pMsdu, pMsgIn->msgData.dataInd.msduLength );
-    counter = *(pMsgIn->msgData.dataInd.pMsdu);
+    counter = *(pMsgIn->msgData.dataInd.pMsdu) - 48;
     src_Addr = pMsgIn->msgData.dataInd.srcAddr;
     lqi = pMsgIn->msgData.dataInd.mpduLinkQuality;
     pl_length = pMsgIn->msgData.dataInd.msduLength;
@@ -881,6 +877,7 @@ static void App_HandleMcpsInput(mcpsToNwkMessage_t *pMsgIn, uint8_t appInstance)
 
     Serial_Print(interfaceId,"\n\rPayload length: 0x", gAllowToBlock_d);
     Serial_PrintHex(interfaceId, &pl_length, 1, gPrtHexNoFormat_c);
+    Serial_Print(interfaceId,"\n\r", gAllowToBlock_d);
 
     Led_State(counter);
 

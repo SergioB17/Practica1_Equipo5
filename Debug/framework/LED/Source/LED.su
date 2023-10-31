@@ -7,7 +7,6 @@
 ../framework/LED/Source/LED.c:375:6:LED_TurnOffAllLeds	8	static
 ../framework/LED/Source/LED.c:389:6:LED_TurnOnAllLeds	8	static
 ../framework/LED/Source/LED.c:403:6:LED_StopFlashingAllLeds	8	static
-../framework/LED/Source/LED.c:415:6:LED_StartBlip	24	static
 ../framework/LED/Source/LED.c:442:6:LED_StopFlash	16	static
 ../framework/LED/Source/LED.c:468:6:LED_SetHex	16	static
 ../framework/LED/Source/LED.c:484:6:LED_SetLed	16	static
@@ -20,5 +19,7 @@
 ../framework/LED/Source/LED.c:709:6:LED_StopSerialFlash	8	static
 ../framework/LED/Source/LED.c:736:6:LED_StartColorWheel	16	static
 ../framework/LED/Source/LED.c:764:13:LED_GpioSet	16	static
-../framework/LED/Source/LED.c:875:13:LED_DecrementBlip	16	static
+../framework/LED/Source/LED.c:794:13:LED_ToggleRgbLed	40	static
+../framework/LED/Source/LED.c:843:13:LED_RgbLedInit	16	static
 ../framework/LED/Source/LED.c:907:13:LED_FlashTimeout	16	static
+../framework/LED/Source/LED.c:952:13:LED_ColorWheelSet	24	static

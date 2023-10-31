@@ -33,9 +33,7 @@ source/mwa_coordinator.o source/mwa_coordinator.d: \
  C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\ieee_802.15.4\mac\interface/MacFunctionalityDefines.h \
  C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\ieee_802.15.4\mac\interface/MacMessages.h \
  C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\framework\OSAbstraction\Interface/fsl_os_abstraction.h \
- C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\framework\OSAbstraction\Interface/fsl_os_abstraction_config.h \
- ../source/MyNewTask.h \
- C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\drivers/fsl_common.h
+ C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\framework\OSAbstraction\Interface/fsl_os_abstraction_config.h
 C:/EmbebidosIII/clases/Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos/source/app_preinclude.h:
 ../source/mwa_coordinator.h:
 C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\framework\LED\Interface/LED.h:
@@ -70,5 +68,3 @@ C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coord
 C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\ieee_802.15.4\mac\interface/MacMessages.h:
 C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\framework\OSAbstraction\Interface/fsl_os_abstraction.h:
 C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\framework\OSAbstraction\Interface/fsl_os_abstraction_config.h:
-../source/MyNewTask.h:
-C:\EmbebidosIII\clases\Practica1_Coord_wireless_examples_ieee_802_15_4_mwa_coordinator_freertos\drivers/fsl_common.h:
