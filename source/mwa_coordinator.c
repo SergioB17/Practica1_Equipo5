@@ -117,6 +117,8 @@ static instanceId_t   macInstance;
 static uint8_t        interfaceId;
 osaEventId_t          mAppEvent;
 
+static nodes_t Nodes[5] = {0};
+
 /************************************************************************************
 *************************************************************************************
 * Public memory declarations
@@ -745,6 +747,11 @@ static uint8_t App_SendAssociateResponse(nwkMessage_t *pMsgIn, uint8_t appInstan
 {
   mlmeMessage_t *pMsg;
   mlmeAssociateRes_t *pAssocRes;
+  uint8_t Existent_Node = false;
+  uint8_t i = 0;
+  static uint8_t node_counter = 0;
+  static uint32_t shrt_addr = 0x0001;
+
  
   Serial_Print(interfaceId,"Sending the MLME-Associate Response message to the MAC...", gAllowToBlock_d);
  
@@ -765,8 +772,40 @@ static uint8_t App_SendAssociateResponse(nwkMessage_t *pMsgIn, uint8_t appInstan
        be assigned to it. */
     if(pMsgIn->msgData.associateInd.capabilityInfo & gCapInfoAllocAddr_c)
     {
-      /* Assign a unique short address less than 0xfffe if the device requests so. */
-      pAssocRes->assocShortAddress = 0x0001;
+		for(i=0; i < node_counter; i++)
+		{
+			if((pMsgIn->msgData.associateInd.deviceAddress) == (Nodes[i].extendedaddress))
+			{
+				//If the node already exists before, the short address is allocated at the device from the structure
+				pAssocRes->assocShortAddress = (Nodes[i].shortaddress);
+				Existent_Node = true;
+			}
+		}
+		if(Existent_Node == false)
+		{
+		      /* Assign a unique short address less than 0xfffe if the device requests so. */
+		      pAssocRes->assocShortAddress = shrt_addr;
+		      shrt_addr ++;
+		      Nodes[node_counter].extendedaddress = pMsgIn->msgData.associateInd.deviceAddress;
+		      Nodes[node_counter].shortaddress = pAssocRes->assocShortAddress;
+		      if(pMsgIn->msgData.associateInd.capabilityInfo & gCapInfoDeviceFfd_c)
+		      {
+		    	  Nodes[node_counter].devicetype = FFD;
+		    	  Nodes[node_counter].RxOn = true;
+		      }
+		      else
+		      {
+		    	  Nodes[node_counter].devicetype = RFD;
+		    	  Nodes[node_counter].RxOn = false;
+		      }
+		      node_counter ++;
+
+		}
+		else
+		{
+			Serial_Print(interfaceId, "\n\rNode already exists\n\n", gAllowToBlock_d);
+		}
+
     }
     else
     {
@@ -774,6 +813,13 @@ static uint8_t App_SendAssociateResponse(nwkMessage_t *pMsgIn, uint8_t appInstan
          the PAN (Associate successful) but that long addressing is used.*/
       pAssocRes->assocShortAddress = 0xFFFE;
     }
+    //Prints short address of device;
+	Serial_Print(interfaceId, "\n\rNode with address: 0x ", gAllowToBlock_d);
+	Serial_PrintHex(interfaceId, (uint8_t *)&(pMsgIn->msgData.associateInd.deviceAddress), 8, gPrtHexNoFormat_c);
+	Serial_Print(interfaceId, "\n\r Was assigned with Short Address: 0x", gAllowToBlock_d);
+	Serial_PrintHex(interfaceId, (uint8_t *)&(pAssocRes->assocShortAddress), 2, gPrtHexNoFormat_c);
+	Serial_Print(interfaceId, "\n\r", gAllowToBlock_d);
+
     /* Get the 64 bit address of the device requesting association. */
     FLib_MemCpy(&pAssocRes->deviceAddress, &pMsgIn->msgData.associateInd.deviceAddress, 8);
     /* Association granted. May also be gPanAtCapacity_c or gPanAccessDenied_c. */
@@ -861,7 +907,7 @@ static void App_HandleMcpsInput(mcpsToNwkMessage_t *pMsgIn, uint8_t appInstance)
        or application layer when data has been received. We simply
        copy the received data to the UART. */
     //Serial_SyncWrite( interfaceId,pMsgIn->msgData.dataInd.pMsdu, pMsgIn->msgData.dataInd.msduLength );
-    counter = *(pMsgIn->msgData.dataInd.pMsdu) - 48;
+    counter = *(pMsgIn->msgData.dataInd.pMsdu);
     src_Addr = pMsgIn->msgData.dataInd.srcAddr;
     lqi = pMsgIn->msgData.dataInd.mpduLinkQuality;
     pl_length = pMsgIn->msgData.dataInd.msduLength;

@@ -13,6 +13,7 @@
 #ifndef _APP_H_
 #define _APP_H_
 
+#include "stdint.h"
 
 /*! *********************************************************************************
 *************************************************************************************
@@ -57,6 +58,23 @@ enum {
   stateStartCoordinator,
   stateStartCoordinatorWaitConfirm,
   stateListen
+};
+
+typedef enum{
+	RFD,
+	FFD
+}device_type_t;
+
+typedef struct {
+	uint16_t shortaddress;
+	uint64_t extendedaddress;
+	uint8_t RxOn;
+	device_type_t devicetype;
+}nodes_t;
+
+enum{
+	false,
+	true
 };
 
 /* Events that are passed to the application task. 
