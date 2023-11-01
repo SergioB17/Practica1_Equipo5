@@ -427,20 +427,23 @@ void Led_State(uint8_t counter)
 {
 	switch(counter)
 	{
-		case(1):
+		case(0):
 			Led_RGB(LED_RGB,0xFF,0x00,0x00);
 		break;
-		case(2):
+		case(1):
 			Led_RGB(LED_RGB,0x00,0xFF,0x00);
 		break;
-		case(3):
+		case(2):
 			Led_RGB(LED_RGB,0x00,0x00,0xFF);
 		break;
-		case(4):
+		case(3):
 			Led_RGB(LED_RGB,0x00,0xFF,0xFF);
 		break;
-		case(5):
+		case(4):
 			Led_RGB(LED_RGB,0xFF,0x00,0xFF);
+		break;
+		case(5):
+			Led_RGB(LED_RGB,0xFF,0xFF,0xFF);
 		break;
 		default:
 			Led_RGB(LED_RGB,0x00,0x00,0x00);
