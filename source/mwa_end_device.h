@@ -85,6 +85,17 @@ enum {
 #define gAppEvtMessageFromMLME_c       (1 << 2)
 #define gAppEvtMessageFromMCPS_c       (1 << 3)
 #define gAppEvtPressedRestoreNvmBut_c  (1 << 4)
+#define gAppEvtSendCounter_c  (1 << 5)
+
+/* Define the available Task's Events */
+#define gMyNewTaskEvent1_c (1 << 0)
+#define gMyNewTaskEvent2_c (1 << 1)
+#define gMyNewTaskEvent3_c (1 << 2)
+#define gMyNewTaskEventSW3_c (1 << 3)
+#define gMyNewTaskEventSW4_c (1 << 4)
+
+#define gMyTaskPriority_c 3
+#define gMyTaskStackSize_c 400
 
 /* Error codes */
 enum {
@@ -102,6 +113,7 @@ enum {
 * Public Prototypes
 *******************************************************************************
 ******************************************************************************/
+
 #ifdef __cplusplus
     extern "C" {
 #endif

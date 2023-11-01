@@ -44,8 +44,11 @@
 #include "board.h"
 #include "fsl_os_abstraction.h"
 
+#include "stdint.h"
 
-#include "MyNewTask.h"
+/* KSDK */
+#include "fsl_common.h"
+#include "EmbeddedTypes.h"
 
 /************************************************************************************
 *************************************************************************************
@@ -93,6 +96,15 @@ void App_Idle_Task(uint32_t argument);
 resultType_t MLME_NWK_SapHandler (nwkMessage_t* pMsg, instanceId_t instanceId);
 resultType_t MCPS_NWK_SapHandler (mcpsToNwkMessage_t* pMsg, instanceId_t instanceId);
 extern void Mac_SetExtendedAddress(uint8_t *pAddr, instanceId_t instanceId);
+
+void App_SendCounter(void);
+
+void Led_State(uint8_t counter);
+void MyTaskTimer_Start(void);
+void MyTaskTimer_Stop(void);
+void MyTask_Init(void);
+void MyTaskSW3(void);
+void MyTaskSW4(void);
 
 /************************************************************************************
 *************************************************************************************
@@ -148,7 +160,6 @@ static uint8_t        interfaceId;
 osaEventId_t          mAppEvent;
 osaTaskId_t           mAppTaskHandler;
 
-uint8_t g_counter = 0;
 
 #if gNvmTestActive_d
 
@@ -164,6 +175,16 @@ NVM_RegisterDataSet(&maMyAddress,         1,   8, maMyAddress_ID_c, gNVM_Mirrore
 NVM_RegisterDataSet(&mAddrMode,           1,   sizeof(addrModeType_t), mAddrMode_ID_c, gNVM_MirroredInRam_c);
 #endif
 
+osaEventId_t mMyEvents;
+//
+///* Global Variable to store our TimerID */
+tmrTimerID_t myTimerID = gTmrInvalidTimerID_c;
+//
+///* Handler ID for task */
+osaTaskId_t gMyTaskHandler_ID;
+//
+static uint8_t ledsState = 0;
+static uint8_t counter_g = 0;
 
 /************************************************************************************
 *************************************************************************************
@@ -196,11 +217,15 @@ uint8_t gState;
 * \remarks
 *
 ********************************************************************************** */
+
+static void myTaskTimerCallback(void *param)
+{
+	OSA_EventSet(mMyEvents, gMyNewTaskEvent2_c);
+}
+
 void main_task(uint32_t param)
 {
     static uint8_t initialized = FALSE;
-    
-    MyTask_Init();
 
     if( !initialized )
     {
@@ -214,6 +239,8 @@ void main_task(uint32_t param)
         Phy_Init();
         RNG_Init(); /* RNG must be initialized after the PHY is Initialized */
         MAC_Init();
+        MyTask_Init();
+
 
 #if mEnterLowPowerWhenIdle_c
         PWR_Init();
@@ -242,6 +269,189 @@ void main_task(uint32_t param)
     App_Idle_Task( param );
 }
 
+void My_Task(osaTaskParam_t argument)
+{
+	osaEventFlags_t customEvent;
+
+	myTimerID = TMR_AllocateTimer();
+	while(1)
+	{
+		OSA_EventWait(mMyEvents, osaEventFlagsAll_c, FALSE, osaWaitForever_c,
+		&customEvent);
+		if( !gUseRtos_c && !customEvent)
+		{
+			break;
+		}
+		/* Depending on the received event */
+		switch(customEvent){
+			case gMyNewTaskEvent1_c:
+				TMR_StartIntervalTimer(myTimerID, /*myTimerID*/
+				1800, /* Timer's Timeout */
+				myTaskTimerCallback, /* pointer to
+				myTaskTimerCallback function */
+				NULL);
+				//TurnOffLeds(); /* Ensure all LEDs are turned off */
+			break;
+			case gMyNewTaskEvent2_c: /* Event called from myTaskTimerCallback */
+				counter_g++;
+				if(counter_g > 5)
+				{
+					counter_g = 0;
+				}
+				Led_State(counter_g);
+				App_SendCounter();
+			break;
+			case gMyNewTaskEvent3_c: /* Event to stop the timer */
+				ledsState = 0;
+				TurnOffLeds();
+				TMR_StopTimer(myTimerID);
+			break;
+			case gMyNewTaskEventSW3_c:
+				counter_g = 1;
+				TMR_StartIntervalTimer(myTimerID, /*myTimerID*/
+								2000, /* Timer's Timeout */
+								myTaskTimerCallback, /* pointer to
+								myTaskTimerCallback function */
+								NULL);
+				Led_State(counter_g);
+				App_SendCounter();
+			break;
+			case gMyNewTaskEventSW4_c:
+				counter_g = 3;
+				TMR_StartIntervalTimer(myTimerID, /*myTimerID*/
+								2000, /* Timer's Timeout */
+								myTaskTimerCallback, /* pointer to
+								myTaskTimerCallback function */
+								NULL);
+				Led_State(counter_g);
+				App_SendCounter();
+			break;
+			default:
+			break;
+		}
+	}
+}
+
+OSA_TASK_DEFINE(My_Task, gMyTaskPriority_c, 1, gMyTaskStackSize_c, FALSE );
+
+/* Function to init the task */
+void MyTask_Init(void)
+{
+	mMyEvents = OSA_EventCreate(TRUE);
+	/* The instance of the MAC is passed at task creaton */
+	gMyTaskHandler_ID = OSA_TaskCreate(OSA_TASK(My_Task), NULL);
+}
+
+/* Public function to send an event to stop the timer */
+void MyTaskTimer_Stop(void)
+{
+	OSA_EventSet(mMyEvents, gMyNewTaskEvent3_c);
+}
+
+/* Public function to send an event to stop the timer */
+void MyTaskTimer_Start(void)
+{
+	OSA_EventSet(mMyEvents, gMyNewTaskEvent1_c);
+}
+
+void MyTaskSW3(void)
+{
+	OSA_EventSet(mMyEvents, gMyNewTaskEventSW3_c);
+}
+
+void MyTaskSW4(void)
+{
+	OSA_EventSet(mMyEvents, gMyNewTaskEventSW4_c);
+}
+
+void Led_State(uint8_t counter)
+{
+	switch(counter)
+	{
+		case(0):
+			Led_RGB(LED_RGB,0xFF,0x00,0x00);
+		break;
+		case(1):
+			Led_RGB(LED_RGB,0x00,0xFF,0x00);
+		break;
+		case(2):
+			Led_RGB(LED_RGB,0x00,0x00,0xFF);
+		break;
+		case(3):
+			Led_RGB(LED_RGB,0x00,0xFF,0xFF);
+		break;
+		case(4):
+			Led_RGB(LED_RGB,0xFF,0x00,0xFF);
+		break;
+		case(5):
+			Led_RGB(LED_RGB,0xFF,0xFF,0xFF);
+		break;
+		default:
+			Led_RGB(LED_RGB,0x00,0x00,0x00);
+		break;
+	}
+}
+
+void App_SendCounter(void)
+{
+    uint16_t count;
+
+    /* Count bytes to send */
+    count = 1;
+
+    /* Limit data transfer size */
+    if( count > mMaxKeysToReceive_c )
+    {
+        count = mMaxKeysToReceive_c;
+    }
+
+    /* Use multi buffering for increased TX performance. It does not really
+    have any effect at low UART baud rates, but serves as an
+    example of how the throughput may be improved in a real-world
+    application where the data rate is of concern. */
+    if( (mcPendingPackets < mDefaultValueOfMaxPendingDataPackets_c) && (mpPacket == NULL) )
+    {
+        /* If the maximum number of pending data buffes is below maximum limit
+        and we do not have a data buffer already then allocate one. */
+        mpPacket = MSG_Alloc(sizeof(nwkToMcpsMessage_t) + gMaxPHYPacketSize_c);
+    }
+
+    if(mpPacket != NULL)
+    {
+        /* Data is available in the SerialManager's receive buffer. Now create an
+        MCPS-Data Request message containing the data. */
+        mpPacket->msgType = gMcpsDataReq_c;
+        mpPacket->msgData.dataReq.pMsdu = (uint8_t*)(&mpPacket->msgData.dataReq.pMsdu) +
+                                          sizeof(mpPacket->msgData.dataReq.pMsdu);
+
+        *mpPacket->msgData.dataReq.pMsdu = counter_g;
+        /* Create the header using coordinator information gained during
+        the scan procedure. Also use the short address we were assigned
+        by the coordinator during association. */
+        FLib_MemCpy(&mpPacket->msgData.dataReq.dstAddr, &mCoordInfo.coordAddress, 8);
+        FLib_MemCpy(&mpPacket->msgData.dataReq.srcAddr, &maMyAddress, 8);
+        FLib_MemCpy(&mpPacket->msgData.dataReq.dstPanId, &mCoordInfo.coordPanId, 2);
+        FLib_MemCpy(&mpPacket->msgData.dataReq.srcPanId, &mCoordInfo.coordPanId, 2);
+        mpPacket->msgData.dataReq.dstAddrMode = mCoordInfo.coordAddrMode;
+        mpPacket->msgData.dataReq.srcAddrMode = mAddrMode;
+        mpPacket->msgData.dataReq.msduLength = count;
+        /* Request MAC level acknowledgement of the data packet */
+        mpPacket->msgData.dataReq.txOptions = gMacTxOptionsAck_c;
+        /* Give the data packet a handle. The handle is
+        returned in the MCPS-Data Confirm message. */
+        mpPacket->msgData.dataReq.msduHandle = mMsduHandle++;
+        /* Don't use security */
+        mpPacket->msgData.dataReq.securityLevel = gMacSecurityNone_c;
+
+        /* Send the Data Request to the MCPS */
+        (void)NWK_MCPS_SapHandler(mpPacket, macInstance);
+
+        /* Prepare for another data buffer */
+        mpPacket = NULL;
+        mcPendingPackets++;
+    }
+}
+
 /*! *********************************************************************************
 * \brief  This is the application's Idle task.
 *
@@ -259,7 +469,7 @@ void main_task(uint32_t param)
 void App_Idle_Task(uint32_t argument)
 {
 #if mEnterLowPowerWhenIdle_c
-    PWRLib_WakeupReason_t wakeupReason;
+   // PWRLib_WakeupReason_t wakeupReason;
 #endif
 
     while(1)
@@ -345,7 +555,7 @@ void App_init( void )
     if (!PWRLib_MCU_WakeupReason.Bits.DeepSleepTimeout)
     {
 #endif
-        Serial_Print(interfaceId, "\n\rPress any switch on board to start running the application.\n\r", gAllowToBlock_d);  
+        Serial_Print(interfaceId, "\n\rPress switch_4 on board to start running the application.\n\r", gAllowToBlock_d);
 #if gNvmTestActive_d
         Serial_Print(interfaceId, "Long press switch_1 on board to use MAC data restore from NVM.\n\r", gAllowToBlock_d);  
 #endif
@@ -455,8 +665,6 @@ void AppThread(osaTaskParam_t argument)
                 /* Startup the timer */
                 //TMR_StartLowPowerTimer(mTimer_c, gTmrIntervalTimer_c ,mPollInterval, AppPollWaitTimeout, NULL );
 
-                //MyTaskTimer_Start();
-
 
                 gState = stateListen;
             }
@@ -559,7 +767,7 @@ void AppThread(osaTaskParam_t argument)
                             Serial_PrintHex(interfaceId, maMyAddress, mAddrMode == gAddrModeShortAddress_c ? 2 : 8, gPrtHexNoFormat_c);
                             Serial_Print(interfaceId, "\n\r\n\rReady to send and receive data over the UART.\n\r\n\r", gAllowToBlock_d);
 
-                            MyTaskTimer_Start();
+
 #if gNvmTestActive_d                             
                             NvSaveOnIdle(&mCoordInfo, TRUE);
                             NvSaveOnIdle(&maMyAddress, TRUE);
@@ -592,10 +800,12 @@ void AppThread(osaTaskParam_t argument)
                     }
                 }
             }
+            MyTaskTimer_Start();
             break; 
 
         case stateListen:
             /* Transmit to coordinator data received from UART. */
+
             if (ev & gAppEvtMessageFromMLME_c)
             {  
                 if (pMsgIn)
@@ -625,6 +835,7 @@ void AppThread(osaTaskParam_t argument)
                   gState = stateInit;
             }
 #endif
+
             break;
         }
 
@@ -1149,63 +1360,6 @@ static void App_TransmitUartData(void)
 ******************************************************************************/
 static void    AppPollWaitTimeout(void *pData)
 { 
-
-//	g_counter++;
-//
-//	if(g_counter == 6)
-//	{
-//		g_counter = 0;
-//	}
-//
-//	mpPacket->msgData.dataReq.pMsdu = &g_counter;
-//
-//	uint8_t count = 1;
-//    /* Use multi buffering for increased TX performance. It does not really
-//    have any effect at low UART baud rates, but serves as an
-//    example of how the throughput may be improved in a real-world
-//    application where the data rate is of concern. */
-//    if( (mcPendingPackets < mDefaultValueOfMaxPendingDataPackets_c) && (mpPacket == NULL) )
-//    {
-//        /* If the maximum number of pending data buffes is below maximum limit
-//        and we do not have a data buffer already then allocate one. */
-//        mpPacket = MSG_Alloc(sizeof(nwkToMcpsMessage_t) + gMaxPHYPacketSize_c);
-//    }
-//
-//    if(mpPacket != NULL)
-//    {
-//        /* Data is available in the SerialManager's receive buffer. Now create an
-//        MCPS-Data Request message containing the data. */
-//        mpPacket->msgType = gMcpsDataReq_c;
-//        mpPacket->msgData.dataReq.pMsdu = (uint8_t*)(&mpPacket->msgData.dataReq.pMsdu) +
-//                                          sizeof(mpPacket->msgData.dataReq.pMsdu);
-//        Serial_Read(interfaceId, mpPacket->msgData.dataReq.pMsdu, count, &count);
-//        /* Create the header using coordinator information gained during
-//        the scan procedure. Also use the short address we were assigned
-//        by the coordinator during association. */
-//        FLib_MemCpy(&mpPacket->msgData.dataReq.dstAddr, &mCoordInfo.coordAddress, 8);
-//        FLib_MemCpy(&mpPacket->msgData.dataReq.srcAddr, &maMyAddress, 8);
-//        FLib_MemCpy(&mpPacket->msgData.dataReq.dstPanId, &mCoordInfo.coordPanId, 2);
-//        FLib_MemCpy(&mpPacket->msgData.dataReq.srcPanId, &mCoordInfo.coordPanId, 2);
-//        mpPacket->msgData.dataReq.dstAddrMode = mCoordInfo.coordAddrMode;
-//        mpPacket->msgData.dataReq.srcAddrMode = mAddrMode;
-//        mpPacket->msgData.dataReq.msduLength = count;
-//        /* Request MAC level acknowledgement of the data packet */
-//        mpPacket->msgData.dataReq.txOptions = gMacTxOptionsAck_c;
-//        /* Give the data packet a handle. The handle is
-//        returned in the MCPS-Data Confirm message. */
-//        mpPacket->msgData.dataReq.msduHandle = mMsduHandle++;
-//        /* Don't use security */
-//        mpPacket->msgData.dataReq.securityLevel = gMacSecurityNone_c;
-//
-//        /* Send the Data Request to the MCPS */
-//        (void)NWK_MCPS_SapHandler(mpPacket, macInstance);
-//
-//        /* Prepare for another data buffer */
-//        mpPacket = NULL;
-//        mcPendingPackets++;
-//    }
-
-
    /* Just to avoid the compiler warning */
   (void)pData;
    
@@ -1254,26 +1408,23 @@ static void App_HandleKeys
     { 
     case gKBD_EventLongSW1_c:
         OSA_EventSet(mAppEvent, gAppEvtPressedRestoreNvmBut_c);
+        break;
     case gKBD_EventLongSW2_c:
     case gKBD_EventLongSW3_c:
     case gKBD_EventLongSW4_c:
     case gKBD_EventSW1_c:
+    	MyTaskSW3();
+    	break;
     case gKBD_EventSW2_c:
+    	MyTaskSW4();
     case gKBD_EventSW3_c:
     case gKBD_EventSW4_c:
-#if gTsiSupported_d
-    case gKBD_EventSW5_c:    
-    case gKBD_EventSW6_c:    
-#endif
-#if gTsiSupported_d
-    case gKBD_EventLongSW5_c:
-    case gKBD_EventLongSW6_c:       
-#endif
         if(gState == stateInit)
         {
             LED_StopFlashingAllLeds();
             OSA_EventSet(mAppEvent, gAppEvtDummyEvent_c);
         }
+        break;
     }
 #endif
 }
